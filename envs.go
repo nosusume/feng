@@ -2,10 +2,232 @@ package feng
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
+
+// GetenvInt8 retrieves the value of the specified environment variable as an int8.
+//
+// It takes a string parameter `key` which specifies the name of the environment variable to retrieve.
+//
+// The function returns an int8 and an error. The int8 represents the value of the environment variable
+// converted to int8. The error is non-nil if there was an error retrieving or converting the value.
+func GetenvInt8(key string) (int8, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return 0, fmt.Errorf("environment variable not found: %s", key)
+	}
+
+	intValue, err := strconv.ParseInt(value, 10, 8)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert environment variable to int8: %s", key)
+	}
+
+	return int8(intValue), nil
+}
+
+// GetenvInt16 retrieves the value of the specified environment variable and converts it to an int16.
+//
+// Parameters:
+// - key: The name of the environment variable.
+//
+// Returns:
+// - int16: The value of the environment variable as an int16.
+// - error: An error if the environment variable is not set or if it fails to be parsed as an int16.
+func GetenvInt16(key string) (int16, error) {
+	val := os.Getenv(key)
+	if val == "" {
+		return 0, fmt.Errorf("environment variable %s not set", key)
+	}
+	num, err := strconv.ParseInt(val, 10, 16)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse environment variable %s as int16: %w", key, err)
+	}
+	return int16(num), nil
+}
+
+// GetenvInt64 retrieves the value of the environment variable specified by the key parameter and returns it as an int64.
+//
+// Parameters:
+// - key: The name of the environment variable.
+//
+// Returns:
+// - int64: The value of the environment variable as an int64.
+// - error: An error if the environment variable does not exist or if it cannot be parsed as an int64.
+func GetenvInt64(key string) (int64, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return 0, nil
+	}
+	parsedValue, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return parsedValue, nil
+}
+
+// GetenvInt32 returns the integer value of the environment variable with the given key.
+//
+// Parameters:
+// - key: the key for the environment variable.
+//
+// Returns:
+// - int32: the integer value of the environment variable, or 0 if the variable is not set or cannot be parsed as an integer.
+func GetenvInt32(key string) (int32, error) {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		return 0, nil
+	}
+	intValue, err := strconv.ParseInt(value, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return int32(intValue), nil
+}
+
+// GetenvUint8 is a function that retrieves and converts an environment variable to an unsigned 8-bit integer.
+//
+// It takes a string parameter `key` which represents the name of the environment variable to retrieve.
+//
+// It returns a uint8 value, which is the converted value of the environment variable, and an error if the conversion fails.
+func GetenvUint8(key string) (uint8, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return 0, errors.New("environment variable not set")
+	}
+	i, err := strconv.ParseUint(value, 10, 8)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse environment variable: %w", err)
+	}
+	return uint8(i), nil
+}
+
+// GetenvUint16 retrieves the value of the environment variable named by the key
+// parameter and returns it as a uint16. If the environment variable is not set
+// or if the value cannot be parsed as a uint16, it returns an error.
+func GetenvUint16(key string) (uint16, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return 0, errors.New("environment variable not set")
+	}
+
+	i, err := strconv.ParseUint(value, 10, 16)
+	if err != nil {
+		return 0, err
+	}
+
+	return uint16(i), nil
+}
+
+// GetenvFloat64 returns the float64 value of the environment variable specified by the key parameter.
+func GetenvFloat64(key string) (float64, error) {
+	valueStr, ok := os.LookupEnv(key)
+	if !ok {
+		return 0, fmt.Errorf("%s environment variable not set", key)
+	}
+	value, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse %s environment variable as float64: %w", key, err)
+	}
+	return value, nil
+}
+
+// GetenvFloat32 retrieves the value of the environment variable with the specified key and converts it to a float32.
+//
+// Parameters:
+// - key: The key of the environment variable to retrieve.
+//
+// Returns:
+// - float32: The value of the environment variable, converted to a float32.
+// - error: An error if the conversion fails or the environment variable does not exist.
+func GetenvFloat32(key string) (float32, error) {
+	valueStr := os.Getenv(key)
+	value, err := strconv.ParseFloat(valueStr, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	return float32(value), nil
+}
+
+// GetenvUint64 retrieves the value of the environment variable with the specified key and converts it to an unsigned 64-bit integer.
+//
+// Parameters:
+// - key: the name of the environment variable to retrieve.
+//
+// Returns:
+// - uint64: the value of the environment variable as an unsigned 64-bit integer.
+// - error: any error that occurred during the conversion or retrieval process.
+func GetenvUint64(key string) (uint64, error) {
+	return strconv.ParseUint(os.Getenv(key), 10, 64)
+}
+
+// GetenvUint32 returns the value of the environment variable as a uint32.
+// It returns an error if the environment variable value cannot be parsed or if it is not present.
+func GetenvUint32(key string) (uint32, error) {
+	valueStr := os.Getenv(key)
+	value, err := strconv.ParseUint(valueStr, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(value), nil
+}
+
+// GetenvInt returns an integer value from the environment variable specified by the given key.
+//
+// Parameters:
+// - key: The name of the environment variable to retrieve the integer value from.
+//
+// Returns:
+// - int: The integer value parsed from the environment variable.
+// - error: An error if the value cannot be parsed as an integer or if the environment variable does not exist.
+func GetenvInt(key string) (int, error) {
+	valueStr := os.Getenv(key)
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse environment variable as integer: %w", err)
+	}
+	return value, nil
+}
+
+// GetenvBool retrieves the boolean value of the specified environment variable.
+//
+// It takes a single parameter, which is the key string representing the name of the environment variable.
+// The function returns a boolean value and an error.
+func GetenvBool(key string) (bool, error) {
+	value := os.Getenv(key) // Get the value of the environment variable
+	if value == "" {        // Check if the value is empty
+		return false, nil
+	}
+
+	// Convert the value to a boolean
+	result, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, err
+	}
+
+	return result, nil
+}
+
+// GetEnvOrDefault returns the value of an environment variable identified by the given key.
+// If the environment variable is not found or its value is empty, the function returns the defaultValue.
+//
+// Parameters:
+// - key: the key of the environment variable to retrieve.
+// - defaultValue: the default value to return if the environment variable is not found or its value is empty.
+//
+// Return type:
+// - string: the value of the environment variable or the defaultValue.
+func GetEnvOrDefault(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		value = defaultValue
+	}
+	return value
+}
 
 // SetenvMap sets environment variables based on the provided map.
 //
