@@ -2,4 +2,4 @@
 
 best config package follow 12-factor application architecture 
 
-使用环境变量来配置你的软件、
+使用环境变量来配置你的软件

@@ -1,6 +1,7 @@
 package feng_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/nosusume/feng"
@@ -36,6 +37,93 @@ func getMapKeys(m map[string]string) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+func TestReadEnvFile(t *testing.T) {
+	// Test case 1: Reading a valid .env file
+	t.Run("Reading a valid .env file", func(t *testing.T) {
+		expected := map[string]string{
+			"KEY1": "VALUE1",
+			"KEY2": "VALUE2",
+		}
+		filename := ".env.test"
+		// Create a test .env file with the desired content
+		file, err := os.Create(filename)
+		if err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
+		}
+		defer file.Close()
+		_, err = file.WriteString("KEY1=\"VALUE1\"\nKEY2=\"VALUE2\"\n")
+		if err != nil {
+			t.Fatalf("Failed to write to test file: %v", err)
+		}
+
+		got, err := feng.ReadEnvFile(filename)
+		if err != nil {
+			t.Fatalf("ReadEnvFile returned an error: %v", err)
+		}
+
+		// Compare the actual result with the expected result
+		for key, value := range expected {
+			if got[key] != value {
+				t.Errorf("Expected %s=%s, but got %s=%s", key, value, key, got[key])
+			}
+		}
+	})
+
+	// Test case 2: Reading an empty .env file
+	t.Run("Reading an empty .env file", func(t *testing.T) {
+		expected := map[string]string{}
+		filename := ".env.empty"
+		// Create an empty test .env file
+		file, err := os.Create(filename)
+		if err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
+		}
+		defer file.Close()
+
+		got, err := feng.ReadEnvFile(filename)
+		if err != nil {
+			t.Fatalf("ReadEnvFile returned an error: %v", err)
+		}
+
+		// Compare the actual result with the expected result
+		for key, value := range expected {
+			if got[key] != value {
+				t.Errorf("Expected %s=%s, but got %s=%s", key, value, key, got[key])
+			}
+		}
+	})
+
+	// Test case 3: Reading a .env file with comment lines
+	t.Run("Reading a .env file with comment lines", func(t *testing.T) {
+		expected := map[string]string{
+			"KEY1": "VALUE1",
+		}
+		filename := ".env.comment"
+		// Create a test .env file with comment lines
+		file, err := os.Create(filename)
+		if err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
+		}
+		defer file.Close()
+		_, err = file.WriteString("# This is a comment\nKEY1=VALUE1\n# Another comment\n")
+		if err != nil {
+			t.Fatalf("Failed to write to test file: %v", err)
+		}
+
+		got, err := feng.ReadEnvFile(filename)
+		if err != nil {
+			t.Fatalf("ReadEnvFile returned an error: %v", err)
+		}
+
+		// Compare the actual result with the expected result
+		for key, value := range expected {
+			if got[key] != value {
+				t.Errorf("Expected %s=%s, but got %s=%s", key, value, key, got[key])
+			}
+		}
+	})
 }
 
 func TestSetenvMap(t *testing.T) {

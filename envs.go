@@ -5,8 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
+)
+
+var (
+	lineRegx = regexp.MustCompile(`\A\s*(?:export\s+)?([\w\.]+)(?:\s*=\s*|:\s+?)('(?:\'|[^'])*'|"(?:\"|[^"])*"|[^#\n]+)?\s*(?:\s*\#.*)?\z`)
+	// TODO: Handle variable environment variables
+	// variableRegx = regexp.MustCompile(`(\\)?(\$)(\{?([A-Z0-9_]+)?\}?)`)
+	// unescapeRgx  = regexp.MustCompile(`\\([^$])`)
 )
 
 // GetenvInt8 retrieves the value of the specified environment variable as an int8.
@@ -283,23 +291,110 @@ func GetenvMap(prefix string) map[string]string {
 //	map[string]string: A map containing the key-value pairs from the .env file
 //	error: An error if there was a problem reading the file
 func ReadEnvFile(filename string) (map[string]string, error) {
-	data, err := os.ReadFile(filename)
+	data, err := os.OpenFile(filename, os.O_RDONLY, 0600)
 	if err != nil {
 		return nil, err
 	}
 
 	envMap := make(map[string]string)
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) == 2 {
-			key := strings.TrimSpace(parts[0])
-			value := strings.TrimSpace(parts[1])
+
+	scanner := bufio.NewScanner(data)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		l := strings.TrimSpace(scanner.Text())
+		// skip empty lines and comment line
+		if l == "" || l[0] == '#' {
+			continue
+		}
+		// trim export start
+		l = strings.TrimPrefix(l, "export ")
+		parts := lineRegx.FindStringSubmatch(l)
+		if len(parts) != 0 {
+			key := removeQuotes(strings.TrimSpace(parts[1]))
+			value := removeQuotes(strings.TrimSpace(parts[2]))
 			envMap[key] = value
 		}
 	}
 
 	return envMap, nil
+}
+
+// Load reads an environment file and sets the environment variables accordingly.
+//
+// It takes a variable number of filenames as parameters and returns an error if any operation fails.
+func Load(filenames ...string) error {
+	// Create a map to store the environment variables
+	envMap := make(map[string]string)
+
+	// Iterate over each filename provided
+	for _, filename := range filenames {
+		// Read the environment file and get the temporary environment map
+		tempEnvMap, err := ReadEnvFile(filename)
+		if err != nil {
+			// Return an error if reading the environment file fails
+			return fmt.Errorf("failed to read env file: %w", err)
+		}
+		// Merge the temporary environment map with the main environment map
+		envMap = mergeMaps(envMap, tempEnvMap)
+	}
+
+	// If no filenames are provided, read the default ".env" file
+	if len(filenames) == 0 {
+		tempEnvMap, err := ReadEnvFile(".env")
+		if err != nil {
+			// Return an error if reading the environment file fails
+			return fmt.Errorf("failed to read env file: %w", err)
+		}
+		// Merge the temporary environment map with the main environment map
+		envMap = mergeMaps(envMap, tempEnvMap)
+	}
+
+	// Set the environment variables using the map
+	if err := SetenvMap(envMap); err != nil {
+		// Return an error if setting the environment variables fails
+		return fmt.Errorf("failed to set environment variables: %w", err)
+	}
+
+	// Return nil if there are no errors
+	return nil
+}
+
+// mergeMaps merges multiple maps into a single map.
+//
+// The function takes in one or more maps as input and combines them into a single map.
+// The input maps are passed as variadic arguments of type `map[string]string`.
+//
+// Returns:
+// - A map of type `map[string]string` that contains the merged key-value pairs from the input maps.
+func mergeMaps(maps ...map[string]string) map[string]string {
+	result := make(map[string]string)
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
+}
+
+// removeQuotes removes the quotes from the beginning and end of a string.
+//
+// It takes a single parameter:
+// - s: the string to remove the quotes from.
+//
+// It returns a string.
+func removeQuotes(s string) string {
+	if len(s) < 2 {
+		return s
+	}
+
+	firstChar := s[0]
+	lastChar := s[len(s)-1]
+
+	if (firstChar == '"' && lastChar == '"') || (firstChar == '\'' && lastChar == '\'') {
+		return s[1 : len(s)-1]
+	}
+
+	return s
 }
 
 // WriteEnvFile writes the contents of a map to a .env file
